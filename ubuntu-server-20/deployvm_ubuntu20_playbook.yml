@@ -1,0 +1,64 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vcenter_vars.yml
+  vars:
+    hostname: ubuntu-test-ansible-1
+  tasks:
+  - name: Boot VM with Ubuntu 20 Server installation iso in CDROM
+    vmware_guest:
+      validate_certs: False
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      datacenter: "{{ dc1 }}"
+      state: poweredon
+      cluster: Development
+      disk:
+        - size_gb: 20
+          type: thin
+          datastore: vsanDatastore
+      cdrom:
+        - controller_number: 0
+          unit_number: 0
+          state: present
+          type: iso
+          iso_path: "[vsanDatastore] ISO/ubuntu-20.04-live-server-amd64.iso"
+      hardware:
+        memory_mb: 2048
+        num_cpus: 2
+        num_cpu_cores_per_socket: 2
+      name:  "{{ hostname }}"
+      folder: ""
+      guest_id: ubuntu64
+      networks:
+        - name: "VL700-MGMT"
+
+  - name: Handle boot parameter
+    vmware_guest_sendkey:
+      validate_certs: False
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ hostname }}"
+      keys_send:
+        - ESC
+        - ESC
+      string_send: 'vmlinuz initrd=initrd.img inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ kickstart_file }}'
+    delegate_to: localhost
+    vars:
+      kickstart_file: kickstart.cfg
+      httpd_ip: 192.168.10.1
+      httpd_port: 9000
+
+  - name: Start installation after providing boot parameter at installation prompt
+    vmware_guest_sendkey:
+      validate_certs: False
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ hostname }}"
+      keys_send:
+        - ENTER
+    delegate_to: localhost

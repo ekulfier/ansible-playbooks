@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  vars_files:
+    - conf_esxi.yml
+  tasks:
+  - name: Create a ESXi VM
+    vmware_guest:
+      validate_certs: False
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      datacenter: "{{ datacenter_name }}"
+      state: poweredon
+      cluster: '{{ cluster_name }}'
+      hardware:
+        hotadd_cpu: '{{ conf_hotadd_cpu}}'
+        hotremove_cpu: '{{ conf_hotremove_cpu }}'
+        iommu: '{{ conf_iommu }}'
+        nested_virt: '{{ conf_nested_virt }}'
+      name: '{{ vm_name }}'
+      folder: '{{ conf_folder }}'
+      guest_id: '{{ conf_guest_id }}'
+      cdrom:
+      - controller_number: 0
+        unit_number: 0
+        state: present
+        type: iso
+        iso_path: '{{ conf_cdrom_iso_path_esxi }}'

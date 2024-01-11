@@ -1,0 +1,71 @@
+---
+- name: Install and Configure ESXi using VMware PowerCLI
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - conf_esxi.yml
+  tasks:
+    - name: Create a ESXi VM
+      vmware_guest:
+        validate_certs: False
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        datacenter: "{{ datacenter_name }}"
+        state: poweredon
+        cluster: '{{ cluster_name }}'
+        hardware:
+          hotadd_cpu: '{{ conf_hotadd_cpu}}'
+          hotremove_cpu: '{{ conf_hotremove_cpu }}'
+          iommu: '{{ conf_iommu }}'
+          nested_virt: '{{ conf_nested_virt }}'
+        name: '{{ vm_name }}'
+        folder: '{{ conf_folder }}'
+        guest_id: '{{ conf_guest_id }}'
+        cdrom:
+        - controller_number: 0
+          unit_number: 0
+          state: present
+          type: iso
+          iso_path: '{{ conf_cdrom_iso_path_esxi }}'
+      delegate_to: localhost
+
+    - name: Configure ESXi Network Settings
+      command: >
+        pwsh -Command "Connect-VIServer -Server {{ vcenter_hostname }} -Username {{ vcenter_username }} -Password '{{ vcenter_password }}';
+        $esxiHost = Get-VMHost -Name '{{ esxi_host }}';
+        $networkSystem = $esxiHost | Get-View | Get-View -Property 'configManager.networkSystem';
+        $networkSystem.UpdateIpAddress('vmk0', '{{ esxi_ip }}', '{{ esxi_subnet }}');
+        $networkSystem.UpdateDefaultGateway('{{ esxi_gateway }}');
+        $networkSystem.UpdateDnsConfig('{{ esxi_dns_servers | join(",") }}');
+        $networkSystem.RestartService('ManagementAgent')"
+      delegate_to: localhost
+
+    - name: Configure ESXi Memory and CPU
+      command: >
+        pwsh -Command "Connect-VIServer -Server {{ vcenter_hostname }} -Username {{ vcenter_username }} -Password '{{ vcenter_password }}';
+        $esxiHost = Get-VMHost -Name '{{ esxi_host }}';
+        $esxiHost | Set-VMHost -MemoryGB {{ esxi_memory_gb }};
+        $esxiHost | Set-VMHost -NumCpu {{ esxi_cpu_cores }}"
+      delegate_to: localhost
+
+    - name: Configure ESXi Hard Disk
+      command: >
+        pwsh -Command "Connect-VIServer -Server {{ vcenter_hostname }} -Username {{ vcenter_username }} -Password '{{ vcenter_password }}';
+        $esxiHost = Get-VMHost -Name '{{ esxi_host }}';
+        $storageSystem = $esxiHost | Get-View | Get-View -Property 'configManager.storageSystem';
+        $storageDeviceInfo = $storageSystem.StorageDeviceInfo;
+        $datastoreSystem = Get-View -Id $storageDeviceInfo.GetDatastore();
+        $datastore = $datastoreSystem.ManagedObjectReference;
+        $spec = New-Object VMware.Vim.HostDiskPartitionSpec;
+        $spec.DiskName = $storageDeviceInfo.DiskPartitionInfo[0].PhysicalPartition[0].DeviceName;
+        $spec.Partition = $storageDeviceInfo.DiskPartitionInfo[0].PhysicalPartition[0].Partition;
+        $spec.Layout = 'vmfs';
+        $spec.CreateSpec = New-Object VMware.Vim.HostVmfsSpec;
+        $spec.CreateSpec.Partition = $spec.Partition;
+        $spec.CreateSpec.Extent = $storageDeviceInfo.Disk.ScsiDisk[0].Extent[0];
+        $spec.CreateSpec.FileSystem = 'vmfs5';
+        $spec.CreateSpec.VolumeName = 'Datastore1';
+        $spec.CreateSpec.Size = {{ esxi_disk_size_gb }} * 1024 * 1024 * 1024;
+        $storageSystem.InitializeDiskPartition($datastore, $spec)"
+      delegate_to: localhost

@@ -1,0 +1,34 @@
+vcenter_hostname: "v_Center_IP"
+vcenter_username: "v_Center_Username"
+vcenter_password: "v_center_password"
+cluster_name: Development
+vm_name: esxi-test-ansible-1
+datacenter_name: Datacenter
+conf_size: 100
+conf_type: thin
+conf_datastore: vsanDatastore
+conf_memory: 12288
+conf_num_cpus: 4
+conf_scsi: lsilogicsas
+conf_folder: ""
+conf_networks_name: "VL700-MGMT"
+conf_hotadd_cpu: true
+conf_hotremove_cpu: true
+conf_iommu: true
+conf_nested_virt: true
+conf_guest_id: "vmkernel65Guest"
+conf_cdrom_iso_path_esxi: "[vsanDatastore] ISO/VMware-VMvisor-Installer-7.0U3l-21424296.x86_64.iso"
+esxi_host: "esxi.test.local"
+esxi_username: "root"
+esxi_password: "P@ssuu0rd1"
+esxi_iso_path: "/home/ekulfier/ISO/VMware-VMvisor-Installer-7.0U3d-19482537.x86_64.iso"
+esxi_network: "VM Network"
+esxi_ip: "192.168.1.100"
+esxi_subnet: "255.255.255.0"
+esxi_gateway: "192.168.1.1"
+esxi_dns_servers:
+- "8.8.8.8"
+- "8.8.4.4"
+esxi_memory_gb: 12
+esxi_cpu_cores: 4
+esxi_disk_size_gb: 100

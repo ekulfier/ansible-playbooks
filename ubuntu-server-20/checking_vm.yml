@@ -1,0 +1,19 @@
+---
+- hosts: localhost
+  name: checking_vm.yml
+  vars_files:
+    - cfg_ubuntu20.yml
+  gather_facts: false
+  tasks:
+    - name: Start checking if the Ubuntu VM(s) is/are ready
+      community.vmware.vmware_guest_info:
+        hostname: "{{ vCenter.FQDN }}"
+        username: "{{ vCenter.User }}"
+        password: "{{ vCenter.Password }}"
+        datacenter: Datacenter
+        validate_certs: false
+        name: test-anisble-ubuntu
+        schema: vsphere
+      register: vm_facts
+    
+    - debug: msg="{{ vm_facts }}"

@@ -1,0 +1,4 @@
+vcenter_hostname: "FQDN_IP"
+vcenter_username: "username"
+vcenter_password: "password"
+dc1: Datacenter
